@@ -21,12 +21,12 @@ Before you begin, make sure you have the following installed:
    git clone https://github.com/simei2k/NodeJS-API.git
    cd NodeJS-API
 2. **Install Dependencies**
+   ```bash
    npm install
 
 3. **Configure Database:**
    Make sure MySQL (or another compatible database) is installed and running.
    Create a database for this project (e.g., workpal).
-   Example MySQL command: CREATE DATABASE workpal;
    Edit the config/config.js or your database configuration file (depending on the structure) with your MySQL credentials.
    ```bash
    module.exports = {
