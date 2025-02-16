@@ -47,4 +47,9 @@ Before you begin, make sure you have the following installed:
    ```bash
    npm start
 
+#To Run Test Cases
+1. Test cases are under the directory test
+2. Run
+   ```bash
+   npm test
 
