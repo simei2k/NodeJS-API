@@ -40,11 +40,11 @@ Before you begin, make sure you have the following installed:
    };
 
 5. **Run Migrations to create tables**
-```bash
-npx sequelize-cli db:migrate
+   ```bash
+   npx sequelize-cli db:migrate
 
 6. **Start the server**
-```bash
-npm start
+   ```bash
+   npm start
 
 
