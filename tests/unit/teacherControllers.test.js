@@ -3,8 +3,142 @@ const app = require('../../app');
 const models = require("../../models");
 const { seedTestData } = require('./studentteacherFixture');
 
+describe('POST /register', () => {
+  beforeEach(async () => {
+    //detroy all records before running tet
+    //disable foreign key checks if not wont be unable to delete table
+    await models.sequelize.query('SET FOREIGN_KEY_CHECKS = 0;');
+    await models.StudentTeacher.destroy({ where: {}, truncate: true });
+    await models.Student.destroy({ where: {}, truncate: true });
+    await models.Teacher.destroy({ where: {}, truncate: true });
+  });
+
+  it('should register multiple students to a teacher', async () => {
+    const teacherEmail = 'teacherken@gmail.com';
+    const students = ['student1@gmail.com', 'student2@gmail.com'];
+
+    const response = await request(app)
+      .post('/register')
+      .send({ teacher: teacherEmail, students: students })
+    expect(response.status).toBe(204);
+
+    const studentTeacherRecords = await models.StudentTeacher.findAll({
+      where: { teacher_email: teacherEmail },
+    });
+
+    expect(studentTeacherRecords.length).toBe(2);
+    expect(studentTeacherRecords[0].student_email).toBe(students[0]);
+    expect(studentTeacherRecords[1].student_email).toBe(students[1]);
+  });
+});
+
+describe('GET /commonstudents', () => {
+  beforeEach(async () => {
+    await models.sequelize.query('SET FOREIGN_KEY_CHECKS = 0;');
+    await models.StudentTeacher.destroy({ where: {}, truncate: true });    
+    await models.Student.destroy({ where: {}, truncate: true });
+    await models.Teacher.destroy({ where: {}, truncate: true });
+  });
+
+  it('should retrieve a list of students common to a given teacher', async () => {
+    const teacherEmail = 'teacherken@gmail.com';
+    const studentEmails = ['student1@gmail.com', 'student2@gmail.com'];
+
+    await models.Teacher.create({ email: teacherEmail });
+    for (let studentEmail of studentEmails) {
+      await models.Student.create({ email: studentEmail, is_suspended: false });
+      await models.StudentTeacher.create({
+        teacher_email: teacherEmail,
+        student_email: studentEmail,
+      });
+    }
+
+    const response = await request(app)
+      .get('/commonstudents')
+      .query({ teacher: teacherEmail });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(expect.arrayContaining(studentEmails));
+  });
+
+  it('should retrieve students common to two teachers', async () => {
+    const teacherEmails = ['teacherken@gmail.com', 'teacherjoe@gmail.com'];
+    const studentEmails = ['student1@gmail.com', 'student2@gmail.com'];
+
+    // Create teachers and students
+    for (let teacherEmail of teacherEmails) {
+      await models.Teacher.create({ email: teacherEmail });
+    }
+    for (let studentEmail of studentEmails) {
+      await models.Student.create({ email: studentEmail, is_suspended: false });
+    }
+
+    // Register students to both teachers
+    for (let studentEmail of studentEmails) {
+      await models.StudentTeacher.create({
+        teacher_email: teacherEmails[0],
+        student_email: studentEmail,
+      });
+      await models.StudentTeacher.create({
+        teacher_email: teacherEmails[1],
+        student_email: studentEmail,
+      });
+    }
+
+    const response = await request(app)
+      .get('/commonstudents')
+      .query({ teacher: teacherEmails[0], teacher: teacherEmails[1] });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(expect.arrayContaining(studentEmails));
+  });
+});
+
+
+describe('POST /suspend', () => {
+  beforeEach(async () => {
+    await models.sequelize.query('SET FOREIGN_KEY_CHECKS = 0;');
+    await models.StudentTeacher.destroy({ where: {}, truncate: true });    
+    await models.Student.destroy({ where: {}, truncate: true });
+    await models.Teacher.destroy({ where: {}, truncate: true });
+  });
+
+  it('should suspend a specified student', async () => {
+    const studentEmail = 'studenttosuspend@gmail.com';
+    const teacherEmail = 'teacherken@gmail.com';
+
+    // Create teacher and student if not already in DB
+    await models.Teacher.create({ email: teacherEmail });
+    await models.Student.create({ email: studentEmail, is_suspended: false });
+
+    // Register student to teacher
+    await models.StudentTeacher.create({
+      teacher_email: teacherEmail,
+      student_email: studentEmail,
+    });
+
+    const response = await request(app)
+      .post('/suspend')
+      .send({ studentEmail })
+      .set('Content-Type', 'application/json');
+
+    expect(response.status).toBe(204);
+
+    // Verify student is suspended
+    const studentRecord = await models.Student.findOne({
+      where: { email: studentEmail },
+    });
+
+    expect(studentRecord.is_suspended).toBe(true);
+  });
+});
+
 describe('Retrieve Notification Function', () => {
   beforeAll(async () => {
+    await models.sequelize.query('SET FOREIGN_KEY_CHECKS = 0;');
+    await models.StudentTeacher.destroy({ where: {}, truncate: true });    
+    await models.Student.destroy({ where: {}, truncate: true });
+    await models.Teacher.destroy({ where: {}, truncate: true });
     //insert data into database
     await seedTestData();
   });
@@ -13,7 +147,7 @@ describe('Retrieve Notification Function', () => {
     // Clean up data after tests
     //need to destory teacherstudent first due to foreign key constraint
     try {
-      await models.StudentTeacher.destroy({ where: {}, truncate: true });
+      await models.StudentTeacher.destroy({ where: {} });
       await models.Student.destroy({ where: {}, truncate: true });
       await models.Teacher.destroy({ where: {}, truncate: true });
     } catch (error) {

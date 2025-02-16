@@ -83,7 +83,7 @@ async function commonStudents(req, res) {
                 }
             }
 
-            return res.status(200).json({ common_students });
+            return res.status(200).json(common_students );
 
         }
         // 10. Case when there is only one teacher
@@ -95,7 +95,7 @@ async function commonStudents(req, res) {
 
             //11. extracts the student_email from model instance and add it into the array
             const common_students = studentsOfTeacher.map(entry => entry.student_email);
-            return res.status(200).json({ common_students });
+            return res.status(200).json(common_students);
         }
 
     } catch (error) {
