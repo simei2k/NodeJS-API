@@ -134,8 +134,55 @@ async function suspend(req, res){
 }
 
 async function retrievefornotifications(req,res){
-    const {teacher, notifications} = req.body;
-    //1. get the list of 
+    //1. get the list of students under the teacher
+    //2. check whether students are suspended
+    //3. add it to the list to be returned
+    //4. notification processing
+    //5. retrieve students mentioned in the list
+    //6. check whether student is suspended, if yes ignore
+    //7. if not suspended add to the list
+    try {
+        const {teacher, notification} = req.body;
+        const students_sent_to = [];
+        
+        //step 1
+        const current_students = await models.StudentTeacher.findAll({
+            where: {teacher_email: teacher}
+        });
+        for (let student of current_students){
+            //step 2
+            const studentRecord = await models.Student.findByPk(student.student_email);
+            //step 3
+            if (studentRecord && !studentRecord.is_suspended){
+                if(!students_sent_to.includes(studentRecord.email)){
+                    students_sent_to.push(studentRecord.email);
+                }
+            }
+        }
+        //step 4 - process notification, step 5
+        const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+        //find all emails in the string
+        const emails = notification.match(emailRegex);
+        for (email of emails){
+            studentRecord = await models.Student.findByPk(email);
+            //step 6, step 7
+            if (!studentRecord.is_suspended){
+                if(!students_sent_to.includes(studentRecord.email)){
+                    students_sent_to.push(studentRecord.email);
+                }
+               
+            }
+        }
+        return res.status(200).json({
+            receipients: students_sent_to,
+        });
+    }
+    catch(error){
+        return res.status(500).json({
+            message: "Error occurred while retrieving students notifications are sent to ",
+            error: error.message
+        });
+    }
     
 }
 
