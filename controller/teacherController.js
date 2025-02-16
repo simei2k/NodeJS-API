@@ -5,12 +5,12 @@ async function register(req,res){
     try{
         const {teacher,students} = req.body;
 
-        const teacherRecord = await models.Teacher.findByPk(teacher);
+        let teacherRecord = await models.Teacher.findByPk(teacher);
 
         if (!teacherRecord){
-            return res.status(404).json({
-                message: "Teacher not found"
-            });
+            teacherRecord = await models.Teacher.create({
+                email: teacher
+            })
         }
         for (let student of students){
                 let studentRecord = await models.Student.findByPk(student);
@@ -28,7 +28,7 @@ async function register(req,res){
                 })
                 
             }
-            return res.status(204);
+            return res.status(204).send();
             }
             
             
@@ -113,7 +113,7 @@ async function suspend(req, res){
             const db_student = await models.Student.findByPk(student.student);
             if (db_student) {
                 await db_student.update({ is_suspended: true });
-                return res.status(204).json(); // Student suspended successfully
+                return res.status(204).json(); 
             } else {
                 return res.status(404).json({
                     message: "Student not found"

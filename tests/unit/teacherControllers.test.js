@@ -104,27 +104,16 @@ describe('POST /suspend', () => {
   });
 
   it('should suspend a specified student', async () => {
-    const studentEmail = 'studenttosuspend@gmail.com';
-    const teacherEmail = 'teacherken@gmail.com';
+    await models.Student.upsert({ email: 'studentwhogetsuspended@gmail.com', is_suspended: false });
+    const studentEmail = 'studentwhogetsuspended@gmail.com';
 
-    // Create teacher and student if not already in DB
-    await models.Teacher.create({ email: teacherEmail });
-    await models.Student.create({ email: studentEmail, is_suspended: false });
-
-    // Register student to teacher
-    await models.StudentTeacher.create({
-      teacher_email: teacherEmail,
-      student_email: studentEmail,
-    });
 
     const response = await request(app)
       .post('/suspend')
-      .send({ studentEmail })
-      .set('Content-Type', 'application/json');
+      .send({ student: studentEmail })
 
     expect(response.status).toBe(204);
 
-    // Verify student is suspended
     const studentRecord = await models.Student.findOne({
       where: { email: studentEmail },
     });
